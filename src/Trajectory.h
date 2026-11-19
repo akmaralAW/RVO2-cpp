@@ -4,8 +4,10 @@
 #include <vector>
 #include <fstream>
 #include <string>
-
 #include "Vector2.h"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 struct Trajectory {
     std::vector<RVO::Vector2> positions;
@@ -37,6 +39,38 @@ inline void saveTrajectoriesYAML(
                 << state.y() << "]\n";
         }
     }
+}
+
+// for stats
+double compute_cost(const std::vector<Trajectory>& trajectories)
+{
+    double cost = 0.0;
+
+    for (const auto& traj : trajectories) {
+        cost += static_cast<double>(traj.positions.size());
+    }
+
+    return (cost - 1) * 0.1;
+}
+
+size_t compute_makespan(const std::vector<Trajectory>& trajectories)
+{
+    size_t makespan = 0;
+
+    for (const auto& traj : trajectories) {
+        makespan = std::max(makespan, (traj.positions.size() - 1));
+    }
+
+    return makespan * 0.1;
+}
+
+void create_dir_if_necessary(const std::string& file_path)
+{
+
+  fs::path path(file_path);
+  if (path.has_parent_path()) {
+      fs::create_directories(path.parent_path());
+  }
 }
 
 // generate instance.yaml ONLY for proof of concept

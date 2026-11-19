@@ -48,6 +48,9 @@ void runRVO(const std::string& input_yaml,
             const std::string& output_yaml,
             const std::string& stats_yaml)
 {
+    
+    auto start = std::chrono::steady_clock::now();
+
 	RVO::RVOSimulator *sim = new RVO::RVOSimulator();
     setupScenario(sim);
     YAML::Node config = YAML::LoadFile(input_yaml);
@@ -55,6 +58,14 @@ void runRVO(const std::string& input_yaml,
 
     if (!robots) {
         throw std::runtime_error("Missing 'robots' field in YAML");
+    }
+
+    create_dir_if_necessary(stats_yaml);
+    std::ofstream stats(stats_yaml, std::ios::app);
+    if (!stats)
+    {
+      std::cerr << "Failed to open stats.yaml file.\n";
+      return;
     }
 
     std::vector<Trajectory> trajectories;
@@ -103,6 +114,22 @@ void runRVO(const std::string& input_yaml,
     std::cout << "RVO simulation finished with "
               << sim->getNumAgents()
               << " agents." << std::endl;
+
+    auto end = std::chrono::steady_clock::now();
+    double elapsed_sec =
+      std::chrono::duration<double>(end - start).count();
+
+    std::cout << "Time: " << elapsed_sec << " sec\n";
+
+    // save stats
+    double cost = compute_cost(trajectories);
+    double makespan = compute_makespan(trajectories);
+    // save stats
+    stats << "stats: " << "\n";
+    stats << "  - t: " << elapsed_sec << "\n";
+    stats << "    cost: " << cost << "\n";
+    stats << "    makespan: " << makespan << "\n";
+    stats.flush();
 }
 
 int main(int argc, char** argv)
